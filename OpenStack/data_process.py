@@ -13,12 +13,7 @@ from logparser import Spell, Drain
 # get [log key, delta time] as input for deeplog
 input_dir  = './datasets'
 output_dir = './output/openstack/'  # The output directory of parsing results
-#log_file   = "HDFS_2K.log"  # The input log file name
-# log_file   = "OpenStack_2k.log"
-# log_file   = "OpenStack_mini.log"
-# log_file   = "OpenStack_abnormal.log"
-# log_file   = "merged_logs.log"
-log_file   = "common2.log"
+log_file   = "nova-samplelog"
 log_structured_file = output_dir + log_file + "_structured.csv"
 # log_structured_file = output_dir + "common2_structured.csv"
 log_templates_file = output_dir + log_file + "_templates.csv"
