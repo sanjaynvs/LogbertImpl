@@ -1,0 +1,12 @@
+pandas
+#collections
+numpy  
+tqdm
+#hashlib
+datetime
+regex
+#re
+scikit-learn
+torch
+matplotlib
+seaborn
