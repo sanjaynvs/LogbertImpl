@@ -11,6 +11,8 @@ import pandas as pd
 import torch
 import tqdm
 import gc
+# to be removed post analysis
+import copy
 
 class Trainer():
     def __init__(self, options):
@@ -75,6 +77,8 @@ class Trainer():
         print("time_valid size: ", len(time_valid))
         print('%'*40)
 
+        # print("logkey_train: ", logkey_train)
+
         train_dataset = LogDataset(logkey_train,time_train, vocab, seq_len=self.seq_len,
                                     corpus_lines=self.corpus_lines, on_memory=self.on_memory, mask_ratio=self.mask_ratio)
 
@@ -100,6 +104,17 @@ class Trainer():
         del time_train
         del time_valid
         gc.collect()
+        
+        # masked_label_copy = copy.deepcopy(self.train_data_loader)
+
+        # counter = 0
+        # print("beginning...print of masked_label_copy","0"*50)
+
+        # for batch in masked_label_copy:
+        #     if counter < 5:
+        #         print("counter: ", counter)
+        #         print(batch)
+        #     counter += 1
 
         print("Building BERT model")
         bert = BERT(len(vocab), max_len=self.max_len, hidden=self.hidden, n_layers=self.layers, attn_heads=self.attn_heads,

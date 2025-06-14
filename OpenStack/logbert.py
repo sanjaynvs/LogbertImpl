@@ -22,17 +22,17 @@ options["model_path"] = options["model_dir"] + "best_bert.pth"
 options["train_vocab"] = options["output_dir"] + "train"
 options["vocab_path"] = options["output_dir"] + "vocab.pkl"  # pickle file
 
-# options["window_size"] = 128
-options["window_size"] = 150
-# options["adaptive_window"] = True
-options["adaptive_window"] = False
-options["seq_len"] = 512
-# options["seq_len"] = 120
+options["window_size"] = 20
+#options["window_size"] = 150
+options["adaptive_window"] = True
+#options["adaptive_window"] = False
+#options["seq_len"] = 512
+options["seq_len"] = 120
 options["max_len"] = 512 # for position embedding
 # options["max_len"] = 200
 
 options["min_len"] = 5
-options["mask_ratio"] = 0.65
+options["mask_ratio"] = 0.2
 # sample ratio
 options["train_ratio"] = 1
 options["valid_ratio"] = 0.1
@@ -71,7 +71,7 @@ options["cuda_devices"] = None
 options["log_freq"] = None
 
 # predict
-options["num_candidates"] = 6
+options["num_candidates"] = 30
 options["gaussian_mean"] = 0
 options["gaussian_std"] = 1
 

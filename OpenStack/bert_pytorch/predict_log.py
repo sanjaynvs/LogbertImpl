@@ -86,6 +86,8 @@ class Predictor():
     def detect_logkey_anomaly(self, masked_output, masked_label):
         num_undetected_tokens = 0
         output_maskes = []
+        # print("masked_output: ", masked_output)
+        # print("masked_label: ", masked_label)
         for i, token in enumerate(masked_label):
             # output_maskes.append(torch.argsort(-masked_output[i])[:30].cpu().numpy()) # extract top 30 candidates for mask labels
 
@@ -158,8 +160,15 @@ class Predictor():
 
         for idx, data in enumerate(data_loader):
             data = {key: value.to(self.device) for key, value in data.items()}
-
+            # print("data[bert_label]",data["bert_label"])
             result = model(data["bert_input"], data["time_input"])
+            # print(result.keys())
+            # print("result[cls_output]")
+            # print(result["cls_output"])
+            # print("result[logkey_output]")
+            # print(result["logkey_output"])
+            # print(result["time_output"].shape)
+            # print(type(result))
 
             # mask_lm_output, mask_tm_output: batch_size x session_size x vocab_size
             # cls_output: batch_size x hidden_size
@@ -183,6 +192,7 @@ class Predictor():
                                }
 
                 mask_index = data["bert_label"][i] > 0
+                
                 num_masked = torch.sum(mask_index).tolist()
                 seq_results["masked_tokens"] = num_masked
 
@@ -239,6 +249,7 @@ class Predictor():
 
         start_time = time.time()
         vocab = WordVocab.load_vocab(self.vocab_path)
+        # print("vocab is...", vocab)
 
         scale = None
         error_dict = None
@@ -254,12 +265,14 @@ class Predictor():
             self.center = center_dict["center"]
             self.radius = center_dict["radius"]
             # self.center = self.center.view(1,-1)
+            # print("self.center: ", self.center)
+            # print("self.radius: ", self.radius)
 
 
-        print("test normal predicting")
+        # print("test normal predicting")
         test_normal_results, test_normal_errors = self.helper(model, self.output_dir, "test_normal", vocab, scale, error_dict)
 
-        print("test abnormal predicting")
+        # print("test abnormal predicting")
         test_abnormal_results, test_abnormal_errors = self.helper(model, self.output_dir, "test_abnormal", vocab, scale, error_dict)
 
         print("Saving test normal results")

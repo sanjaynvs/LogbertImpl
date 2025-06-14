@@ -29,6 +29,7 @@ class BERTDataset(Dataset):
         return self.corpus_lines
 
     def __getitem__(self, item):
+        # print("__getitem__", item)
         t1, t2, is_next_label = self.random_sent(item)
         t1_random, t1_label = self.random_word(t1)
         t2_random, t2_label = self.random_word(t2)
@@ -55,6 +56,7 @@ class BERTDataset(Dataset):
         return {key: torch.tensor(value) for key, value in output.items()}
 
     def random_word(self, sentence):
+        print("in dataset.py...random_word..",sentence)
         tokens = list(sentence)
         output_label = []
 
@@ -86,6 +88,9 @@ class BERTDataset(Dataset):
             else:
                 tokens[i] = self.vocab.stoi.get(token, self.vocab.unk_index)
                 output_label.append(0)
+        
+        print("tokens: ", tokens)
+        print("output_label: ", output_label)
 
         return tokens, output_label
 

@@ -21,7 +21,11 @@ log_sequence_file = output_dir + "openstack_sequence.csv"
 
 def mapping():
     log_temp = pd.read_csv(log_templates_file)
+    print("in mapping....")
+    print(log_temp["Occurrences"].head())
+    print(log_temp["Occurrences"].max())
     log_temp.sort_values(by = ["Occurrences"], ascending=False, inplace=True)
+    print(log_temp.head())
     log_temp_dict = {event: idx+1 for idx , event in enumerate(list(log_temp["EventId"])) }
     # print(log_temp_dict)
     with open (output_dir + "openstack_log_templates.json", "w") as f:
@@ -90,7 +94,7 @@ def openstack_sampling(log_file, window='session'):
 def _custom_resampler(array_like):
     return list(array_like)
 
-def generate_train_test(compute_instance_file, n=None, ratio=0.3):
+def generate_train_test(compute_instance_file, n=None, ratio=0.7):
     # print("Loading", compute_instance_file)
     computeInst_label_dict = {}
     computeInst_label_file = os.path.join(input_dir, "anomaly_label.csv")
@@ -103,7 +107,7 @@ def generate_train_test(compute_instance_file, n=None, ratio=0.3):
     # print(computeInst_label_dict.head())
     seq["Label"] = seq["ComputeInstance"].apply(lambda x: computeInst_label_dict.get(x)) #add label to the sequence of each ComputeInstance
     # print("seq[Label].value_counts()")
-    # print(seq["Label"].value_counts())
+    print(seq['ComputeInstance'].nunique())
     normal_seq = seq[seq["Label"] == 0]["EventSequence"]
     normal_seq = normal_seq.sample(frac=1, random_state=20) # shuffle normal data
 

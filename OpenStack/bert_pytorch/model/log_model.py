@@ -23,6 +23,7 @@ class BERTLog(nn.Module):
 
     def forward(self, x, time_info):
         x = self.bert(x, time_info=time_info)
+        print("in forward...",x)
 
         self.result["logkey_output"] = self.mask_lm(x)
         # self.result["time_output"] = self.time_lm(x)
@@ -46,11 +47,17 @@ class MaskedLogModel(nn.Module):
         :param hidden: output size of BERT model
         :param vocab_size: total vocab size
         """
+        print("MaskedLogModel")
+
         super().__init__()
         self.linear = nn.Linear(hidden, vocab_size)
         self.softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
+        print("MaskedLogModel forward")
+        print("x: ", x)
+        print("self.linear(x): ", self.linear(x))
+        print(self.softmax(self.linear(x)))
         return self.softmax(self.linear(x))
 
 

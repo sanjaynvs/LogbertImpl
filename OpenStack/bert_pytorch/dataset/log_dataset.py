@@ -96,6 +96,7 @@ class LogDataset(Dataset):
         return tokens, output_label, time_intervals, time_label
 
     def collate_fn(self, batch, percentile=100, dynamical_pad=True):
+        print("in collate_fn", len(batch))
         lens = [len(seq[0]) for seq in batch]
 
         # find the max len in each batch
