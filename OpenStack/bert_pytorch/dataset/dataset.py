@@ -29,7 +29,7 @@ class BERTDataset(Dataset):
         return self.corpus_lines
 
     def __getitem__(self, item):
-        # print("__getitem__", item)
+        print("BERTDataset__getitem__", item)
         t1, t2, is_next_label = self.random_sent(item)
         t1_random, t1_label = self.random_word(t1)
         t2_random, t2_label = self.random_word(t2)
@@ -48,6 +48,8 @@ class BERTDataset(Dataset):
         padding = [self.vocab.pad_index for _ in range(self.seq_len - len(bert_input))]
         bert_input.extend(padding), bert_label.extend(padding), segment_label.extend(padding)
 
+        print("bert_input: ", bert_input, "bert_label: ", bert_label, "segment_label: ", segment_label, "is_next_label: ", is_next_label)
+        
         output = {"bert_input": bert_input,
                   "bert_label": bert_label,
                   "segment_label": segment_label,

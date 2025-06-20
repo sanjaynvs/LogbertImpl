@@ -75,26 +75,30 @@ class Trainer():
         print("logkey_valid size: ", len(logkey_valid)) 
         print("time_train size: ", len(time_train))
         print("time_valid size: ", len(time_valid))
-        print('%'*40)
+        # print('%'*40)
 
         # print("logkey_train: ", logkey_train)
+        # print("before train_dataset")
 
         train_dataset = LogDataset(logkey_train,time_train, vocab, seq_len=self.seq_len,
                                     corpus_lines=self.corpus_lines, on_memory=self.on_memory, mask_ratio=self.mask_ratio)
 
-        print("\nLoading valid Dataset")
+        # print("\nLoading valid Dataset")
         # valid_dataset = generate_train_valid(self.output_path + "train", window_size=self.window_size,
         #                              adaptive_window=self.adaptive_window,
         #                              sample_ratio=self.valid_ratio)
 
+        # print("before valid_dataset")
         valid_dataset = LogDataset(logkey_valid, time_valid, vocab, seq_len=self.seq_len, on_memory=self.on_memory, mask_ratio=self.mask_ratio)
 
-        print("Creating Dataloader")
+        # print("Creating Dataloader")
         # self.train_data_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,
         #                               collate_fn=train_dataset.collate_fn, drop_last=True)
+        # print("before self.train_data_loader")
         self.train_data_loader = DataLoader(train_dataset, batch_size=self.batch_size, num_workers=self.num_workers,
                                       collate_fn=train_dataset.collate_fn, drop_last=False)
         
+        # print("before self.valid_data_loader")
         self.valid_data_loader = DataLoader(valid_dataset, batch_size=self.batch_size, num_workers=self.num_workers,
                                        collate_fn=train_dataset.collate_fn, drop_last=True)
         del train_dataset
@@ -127,6 +131,8 @@ class Trainer():
                               is_logkey=self.is_logkey, is_time=self.is_time,
                               hypersphere_loss=self.hypersphere_loss)
 
+
+        print("After BERT Trainer")
         self.start_iteration(surfix_log="log2")
 
         self.plot_train_valid_loss("_log2")
@@ -163,7 +169,7 @@ class Trainer():
 
             # save model after 10 warm up epochs
             if avg_loss < best_loss:
-                print("if 1......")
+                # print("if 1......")
                 best_loss = avg_loss
                 self.trainer.save(self.model_path)
                 epochs_no_improve = 0
@@ -172,7 +178,7 @@ class Trainer():
                 print(self.hypersphere_loss)
 
                 if epoch > 4 and self.hypersphere_loss:
-                    print("if 2......")
+                    # print("if 2......")
                     best_center = self.trainer.hyper_center
                     best_radius = self.trainer.radius
                     total_dist = train_dist + valid_dist

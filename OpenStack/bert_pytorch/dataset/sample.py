@@ -108,7 +108,7 @@ def generate_train_valid(data_path, window_size=20, adaptive_window=True,
         # print("times", times)
         logkey_seq_pairs += logkeys
         time_seq_pairs += times
-        # print("logkey_seq_pairs", len(logkey_seq_pairs))
+        # print("logkey_seq_pairs",0 len(logkey_seq_pairs))
         # print("time_seq_pairs", len(time_seq_pairs))
     
     print("counter", counter)

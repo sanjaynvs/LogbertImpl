@@ -86,11 +86,14 @@ class Predictor():
     def detect_logkey_anomaly(self, masked_output, masked_label):
         num_undetected_tokens = 0
         output_maskes = []
+        # print("in detect_logkey_anomaly")
         # print("masked_output: ", masked_output)
         # print("masked_label: ", masked_label)
         for i, token in enumerate(masked_label):
             # output_maskes.append(torch.argsort(-masked_output[i])[:30].cpu().numpy()) # extract top 30 candidates for mask labels
-
+            # print("token: ", token)
+            # print("masked_output[i]: ", masked_output[i])
+            # print("masked_output[i]: ", torch.argsort(-masked_output[i])[:self.num_candidates])
             if token not in torch.argsort(-masked_output[i])[:self.num_candidates]:
                 num_undetected_tokens += 1
 
@@ -136,6 +139,7 @@ class Predictor():
         return log_seqs, tim_seqs
 
     def helper(self, model, output_dir, file_name, vocab, scale=None, error_dict=None):
+        print("in predictor:helper()")
         total_results = []
         total_errors = []
         output_results = []
@@ -150,31 +154,18 @@ class Predictor():
             rand_index = rand_index[:int(num_test * self.test_ratio)] if isinstance(self.test_ratio, float) else rand_index[:self.test_ratio]
             logkey_test, time_test = logkey_test[rand_index], time_test[rand_index]
 
-
         seq_dataset = LogDataset(logkey_test, time_test, vocab, seq_len=self.seq_len,
                                  corpus_lines=self.corpus_lines, on_memory=self.on_memory, predict_mode=True, mask_ratio=self.mask_ratio)
 
         # use large batch size in test data
-        data_loader = DataLoader(seq_dataset, batch_size=self.batch_size, num_workers=self.num_workers,
-                                 collate_fn=seq_dataset.collate_fn)
+        data_loader = DataLoader(seq_dataset, batch_size=self.batch_size, num_workers=self.num_workers, collate_fn=seq_dataset.collate_fn)
 
         for idx, data in enumerate(data_loader):
+
             data = {key: value.to(self.device) for key, value in data.items()}
             # print("data[bert_label]",data["bert_label"])
             result = model(data["bert_input"], data["time_input"])
-            # print(result.keys())
-            # print("result[cls_output]")
-            # print(result["cls_output"])
-            # print("result[logkey_output]")
-            # print(result["logkey_output"])
-            # print(result["time_output"].shape)
-            # print(type(result))
-
-            # mask_lm_output, mask_tm_output: batch_size x session_size x vocab_size
-            # cls_output: batch_size x hidden_size
-            # bert_label, time_label: batch_size x session_size
-            # in session, some logkeys are masked
-
+            
             mask_lm_output, mask_tm_output = result["logkey_output"], result["time_output"]
             output_cls += result["cls_output"].tolist()
 
@@ -192,11 +183,16 @@ class Predictor():
                                }
 
                 mask_index = data["bert_label"][i] > 0
-                
+                # print("data[bert_label][i]", data["bert_label"][i])  
                 num_masked = torch.sum(mask_index).tolist()
+                # print("num_masked: ", num_masked)
                 seq_results["masked_tokens"] = num_masked
 
                 if self.is_logkey:
+                    
+                    # print("mask_index",mask_index)
+                    # print("mask_lm_output[i][mask_index]", mask_lm_output[i][mask_index])
+                    # print("data[bert_label][i][mask_index]", data["bert_label"][i][mask_index])
                     num_undetected, output_seq = self.detect_logkey_anomaly(
                         mask_lm_output[i][mask_index], data["bert_label"][i][mask_index])
                     seq_results["undetected_tokens"] = num_undetected
@@ -229,15 +225,115 @@ class Predictor():
                         )
                     )
                 total_results.append(seq_results)
+    def helper_2(self, model, output_dir, file_name, vocab, scale=None, error_dict=None):
+            print("in predictor:helper()")
+            total_results = []
+            total_errors = []
+            output_results = []
+            total_dist = []
+            output_cls = []
+            logkey_test, time_test = self.generate_test(output_dir, file_name, self.window_size, self.adaptive_window, self.seq_len, scale, self.min_len)
 
-        # for time
-        # return total_results, total_errors
+            # use 1/10 test data
+            if self.test_ratio != 1:
+                num_test = len(logkey_test)
+                rand_index = torch.randperm(num_test)
+                rand_index = rand_index[:int(num_test * self.test_ratio)] if isinstance(self.test_ratio, float) else rand_index[:self.test_ratio]
+                logkey_test, time_test = logkey_test[rand_index], time_test[rand_index]
 
-        #for logkey
-        # return total_results, output_results
+            seq_dataset = LogDataset(logkey_test, time_test, vocab, seq_len=self.seq_len,
+                                    corpus_lines=self.corpus_lines, on_memory=self.on_memory, predict_mode=True, mask_ratio=self.mask_ratio)
 
-        # for hypersphere distance
-        return total_results, output_cls
+            # use large batch size in test data
+            data_loader = DataLoader(seq_dataset, batch_size=self.batch_size, num_workers=self.num_workers, collate_fn=seq_dataset.collate_fn)
+
+            result = None
+            output_cls = None
+            for idx, data in enumerate(data_loader):
+
+                data = {key: value.to(self.device) for key, value in data.items()}
+                # print("data[bert_label]",data["bert_label"])
+                result = model(data["bert_input"], data["time_input"])
+                
+                # print("result[cls_output]",result["cls_output"])
+                mask_lm_output, mask_tm_output = result["logkey_output"], result["time_output"]
+                # output_cls += result["cls_output"].tolist()
+                if isinstance(output_cls, list) and isinstance(result["cls_output"], torch.Tensor):
+                    output_cls += result["cls_output"].tolist()
+                else:
+                    print("Type mismatch:", type(output_cls), type(result["cls_output"]))
+
+
+                # print("output_cls",output_cls)
+
+                # dist = torch.sum((result["cls_output"] - self.hyper_center) ** 2, dim=1)
+                # when visualization no mask
+                # continue
+                # counter = 1
+                # loop though each session in batch
+                for i in range(len(data["bert_label"])):
+                    seq_results = {"num_error": 0,
+                                "undetected_tokens": 0,
+                                "masked_tokens": 0,
+                                "total_logkey": torch.sum(data["bert_input"][i] > 0).item(),
+                                "deepSVDD_label": 0
+                                }
+
+                    mask_index = data["bert_label"][i] > 0
+                    # print("data[bert_label][i]", data["bert_label"][i])  
+                    num_masked = torch.sum(mask_index).tolist()
+                    # print("num_masked: ", num_masked)
+                    seq_results["masked_tokens"] = num_masked
+                    
+                    if self.is_logkey:
+                        # if counter ==1:
+                        #     print("mask_index",mask_index)
+                        #     print("mask_lm_output[i][mask_index]", mask_lm_output[i][mask_index])
+                        #     print("data[bert_label][i][mask_index]", data["bert_label"][i][mask_index])
+                        # counter = counter + 1
+                        num_undetected, output_seq = self.detect_logkey_anomaly(
+                            mask_lm_output[i][mask_index], data["bert_label"][i][mask_index])
+                        seq_results["undetected_tokens"] = num_undetected
+                        
+                        output_results.append(output_seq)
+
+                #     if self.hypersphere_loss_test:
+                #         # detect by deepSVDD distance
+                #         assert result["cls_output"][i].size() == self.center.size()
+                #         # dist = torch.sum((result["cls_fnn_output"][i] - self.center) ** 2)
+                #         dist = torch.sqrt(torch.sum((result["cls_output"][i] - self.center) ** 2))
+                #         total_dist.append(dist.item())
+
+                #         # user defined threshold for deepSVDD_label
+                #         seq_results["deepSVDD_label"] = int(dist.item() > self.radius)
+                #         #
+                #         # if dist > 0.25:
+                #         #     pass
+
+                #     if idx < 10 or idx % 1000 == 0:
+                #         print(
+                #             "{}, #time anomaly: {} # of undetected_tokens: {}, # of masked_tokens: {} , "
+                #             "# of total logkey {}, deepSVDD_label: {} \n".format(
+                #                 file_name,
+                #                 seq_results["num_error"],
+                #                 seq_results["undetected_tokens"],
+                #                 seq_results["masked_tokens"],
+                #                 seq_results["total_logkey"],
+                #                 seq_results['deepSVDD_label']
+                #             )
+                #         )
+                #     total_results.append(seq_results)
+
+            # for time
+            # return total_results, total_errors
+
+            #for logkey
+            # return total_results, output_results
+
+            # for hypersphere distance
+            # return total_results, output_cls
+            # return result#, output_cls
+            return output_results
 
     def predict(self):
         print(self.model_path)
@@ -304,5 +400,80 @@ class Predictor():
         print('Precision: {:.2f}%, Recall: {:.2f}%, F1-measure: {:.2f}%'.format(P, R, F1))
         elapsed_time = time.time() - start_time
         print('elapsed_time: {}'.format(elapsed_time))
+
+
+
+    def predict_2(self):
+            print(self.model_path)
+            print(os.getcwd())
+            model = torch.load(self.model_path, weights_only=False)
+            model.to(self.device)
+            model.eval()
+            print('model_path: {}'.format(self.model_path))
+
+            start_time = time.time()
+            vocab = WordVocab.load_vocab(self.vocab_path)
+            # print("vocab is...", vocab)
+
+            scale = None
+            error_dict = None
+            if self.is_time:
+                with open(self.scale_path, "rb") as f:
+                    scale = pickle.load(f)
+
+                with open(self.model_dir + "error_dict.pkl", 'rb') as f:
+                    error_dict = pickle.load(f)
+
+            if self.hypersphere_loss:
+                center_dict = torch.load(self.model_dir + "best_center.pt", weights_only=False)
+                self.center = center_dict["center"]
+                self.radius = center_dict["radius"]
+                # self.center = self.center.view(1,-1)
+                # print("self.center: ", self.center)
+                # print("self.radius: ", self.radius)
+
+
+            # print("test normal predicting")
+            test_normal_result = self.helper_2(model, self.output_dir, "test_normal_2", vocab, scale, error_dict)
+
+            # print("test abnormal predicting")
+            test_abnormal_result = self.helper_2(model, self.output_dir, "test_abnormal_2", vocab, scale, error_dict)
+
+            # print("test normal result: ", test_normal_result)
+            # print("test_normal_output_cls: ", test_normal_output_cls)
+            # print("test abnormal result: ", test_abnormal_result)
+            # print("test_abnormal_output_cls: ", test_abnormal_output_cls)
+
+            # print("Saving test normal results")
+            # with open(self.model_dir + "test_normal_results", "wb") as f:
+            #     pickle.dump(test_normal_results, f)
+
+            # print("Saving test abnormal results")
+            # with open(self.model_dir + "test_abnormal_results", "wb") as f:
+            #     pickle.dump(test_abnormal_results, f)
+
+            # print("Saving test normal errors")
+            # with open(self.model_dir + "test_normal_errors.pkl", "wb") as f:
+            #     pickle.dump(test_normal_errors, f)
+
+            # print("Saving test abnormal results")
+            # with open(self.model_dir + "test_abnormal_errors.pkl", "wb") as f:
+            #     pickle.dump(test_abnormal_errors, f)
+
+            # params = {"is_logkey": self.is_logkey, "is_time": self.is_time, "hypersphere_loss": self.hypersphere_loss,
+            #           "hypersphere_loss_test": self.hypersphere_loss_test}
+            # best_th, best_seq_th, FP, TP, TN, FN, P, R, F1 = find_best_threshold(test_normal_results,
+            #                                                                     test_abnormal_results,
+            #                                                                     params=params,
+            #                                                                     th_range=np.arange(10),
+            #                                                                     seq_range=np.arange(0,1,0.1))
+
+            # print("best threshold: {}, best threshold ratio: {}".format(best_th, best_seq_th))
+            # print("TP: {}, TN: {}, FP: {}, FN: {}".format(TP, TN, FP, FN))
+            # print('Precision: {:.2f}%, Recall: {:.2f}%, F1-measure: {:.2f}%'.format(P, R, F1))
+            
+            elapsed_time = time.time() - start_time
+            print('elapsed_time: {}'.format(elapsed_time))
+
 
 

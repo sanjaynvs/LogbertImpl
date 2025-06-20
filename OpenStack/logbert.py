@@ -22,17 +22,17 @@ options["model_path"] = options["model_dir"] + "best_bert.pth"
 options["train_vocab"] = options["output_dir"] + "train"
 options["vocab_path"] = options["output_dir"] + "vocab.pkl"  # pickle file
 
-options["window_size"] = 20
-#options["window_size"] = 150
+# options["window_size"] = 20
+options["window_size"] = 128
 options["adaptive_window"] = True
 #options["adaptive_window"] = False
-#options["seq_len"] = 512
-options["seq_len"] = 120
+options["seq_len"] = 512
+# options["seq_len"] = 120
 options["max_len"] = 512 # for position embedding
 # options["max_len"] = 200
 
-options["min_len"] = 5
-options["mask_ratio"] = 0.2
+options["min_len"] = 10
+options["mask_ratio"] = 0.65
 # sample ratio
 options["train_ratio"] = 1
 options["valid_ratio"] = 0.1
@@ -43,8 +43,8 @@ options["is_logkey"] = True
 options["is_time"] = False
 
 options["hypersphere_loss"] = True
-# options["hypersphere_loss_test"] = False
-options["hypersphere_loss_test"] = True
+options["hypersphere_loss_test"] = False
+# options["hypersphere_loss_test"] = True
 
 options["scale"] = None # MinMaxScaler()
 options["scale_path"] = options["model_dir"] + "scale.pkl"
@@ -55,10 +55,10 @@ options["layers"] = 4
 options["attn_heads"] = 4
 
 # options["epochs"] = 200
-options["epochs"] = 11
+options["epochs"] = 3
 options["n_epochs_stop"] = 10
-# options["batch_size"] = 32
-options["batch_size"] = 8
+options["batch_size"] = 32
+# options["batch_size"] = 8
 options["corpus_lines"] = None
 options["on_memory"] = True
 options["num_workers"] = 5
@@ -71,7 +71,8 @@ options["cuda_devices"] = None
 options["log_freq"] = None
 
 # predict
-options["num_candidates"] = 30
+# options["num_candidates"] = 30
+options["num_candidates"] = 6
 options["gaussian_mean"] = 0
 options["gaussian_std"] = 1
 
@@ -109,7 +110,8 @@ if __name__ == "__main__":
         Trainer(options).train()
 
     elif args.mode == 'predict':
-        Predictor(options).predict()
+        # Predictor(options).predict()
+        Predictor(options).predict_2()
 
     elif args.mode == 'vocab':
         with open(options["train_vocab"], "r", encoding=args.encoding) as f:
